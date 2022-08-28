@@ -34,7 +34,7 @@ int main() {
 
   // start the timer
   std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-  pi = 0.l;  // set an initial value of PI
+  answer = 0.l;  // set an initial value of the integral
   // create an array of threads' identificators
   pthread_t* threads = (pthread_t*) malloc ((NumOfThreads) * sizeof(pthread_t));
   if (threads == NULL) {
@@ -118,8 +118,8 @@ int main() {
     }
   }
   std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();  // stop the timer
-  std::cout << "Number PI is equal to: " << std::setprecision(20) << pi << '\n';
-  std::cout << "It took " << (std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count()) / 1'000'000'000.l << " seconds to calculate PI\n";
+  std::cout << "The answer: " << std::setprecision(20) << answer << '\n';
+  std::cout << "It took " << (std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count()) / 1'000'000'000.l << " seconds to calculate it.\n";
   // the destroyment of the mutex
   if (pthread_mutex_destroy(&mutex) != 0) {
     std::cerr << "Failed to destroy a mutex!\n";

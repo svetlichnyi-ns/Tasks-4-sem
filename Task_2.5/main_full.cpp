@@ -10,7 +10,7 @@ long double function_integral (long double x) {  // the function whose integral 
   return 2.l * sqrtl(1.l - powl(x, 2.l));
 }
 
-long double pi;  // a global variable, common for all threads
+long double answer;  // a global variable, common for all threads
 pthread_mutex_t mutex;
 
 // the arguments of a function, called on a thread, are "wrapped" in a structure
@@ -67,14 +67,14 @@ void* integral(void* args) {  // a function, called on a thread
       arg->st_error = true;
       return NULL;
   }
-  // the beginning of the access to the critical section, i.e. to a variable 'pi'
+  // the beginning of the access to the critical section, i.e. to a variable 'answer'
   if (pthread_mutex_lock(&mutex) != 0) {
     std::cerr << "Failed to lock a mutex!\n";
     arg->st_error = true;  // indicator operation
     return NULL;
   }
-  pi += sum * arg->st_step;
-  // the end of the access to the critical section, i.e. to a variable 'pi'
+  answer += sum * arg->st_step;
+  // the end of the access to the critical section, i.e. to a variable 'answer'
   if (pthread_mutex_unlock(&mutex) != 0) {
     std::cerr << "Failed to unlock a mutex!\n";
     arg->st_error = true;  // indicator operation
@@ -111,7 +111,7 @@ int main() {
 
   // start the timer
   std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-  pi = 0.l;  // set an initial value of PI
+  answer = 0.l;  // set an initial value of the integral
   // create an array of threads' identificators
   pthread_t* threads = (pthread_t*) malloc ((NumOfThreads) * sizeof(pthread_t));
   if (threads == NULL) {
@@ -195,8 +195,8 @@ int main() {
     }
   }
   std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();  // stop the timer
-  std::cout << "Number PI is equal to: " << std::setprecision(20) << pi << '\n';
-  std::cout << "It took " << (std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count()) / 1'000'000'000.l << " seconds to calculate PI\n";
+  std::cout << "The answer: " << std::setprecision(20) << answer << '\n';
+  std::cout << "It took " << (std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count()) / 1'000'000'000.l << " seconds to calculate it.\n";
   // the destroyment of the mutex
   if (pthread_mutex_destroy(&mutex) != 0) {
     std::cerr << "Failed to destroy a mutex!\n";

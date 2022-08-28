@@ -2,7 +2,7 @@
 #define HEADER_H
 #include <pthread.h>
 
-extern long double pi;  // a global variable, common for all threads
+extern long double answer;  // a global variable, common for all threads
 extern pthread_mutex_t mutex;  // it's used for threads' synchronization
 
 typedef struct {  // the arguments of a function, called on a thread, are "wrapped" in a structure

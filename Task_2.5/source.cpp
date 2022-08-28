@@ -51,14 +51,14 @@ void* integral(void* args) {  // a function, called on a thread
       arg->st_error = true;
       return NULL;
   }
-  // the beginning of the access to the critical section, i.e. to a variable 'pi'
+  // the beginning of the access to the critical section, i.e. to a variable 'answer'
   if (pthread_mutex_lock(&mutex) != 0) {
     std::cerr << "Failed to lock a mutex!\n";
     arg->st_error = true;  // indicator operation
     return NULL;
   }
-  pi += sum * arg->st_step;
-  // the end of the access to the critical section, i.e. to a variable 'pi'
+  answer += sum * arg->st_step;
+  // the end of the access to the critical section, i.e. to a variable 'answer'
   if (pthread_mutex_unlock(&mutex) != 0) {
     std::cerr << "Failed to unlock a mutex!\n";
     arg->st_error = true;  // indicator operation
