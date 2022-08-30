@@ -3,6 +3,11 @@
 #include <cmath>
 #include "header.h"
 
+long double answer;
+int count;
+pthread_mutex_t mutex_1;
+pthread_mutex_t mutex_2;
+
 long double function_integral (long double x) {  // the function whose integral is calculated
   return 2.l * sqrtl(1.l - powl(x, 2.l));
 }
