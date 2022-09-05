@@ -1,16 +1,17 @@
 #include <iostream>
-#include <pthread.h>
+#include <thread>
 #include <cmath>
+#include <mutex>
 #include "header.h"
 
 long double answer;
-pthread_mutex_t mutex;
+std::mutex mutex;
 
 long double function_integral (long double x) {  // the function whose integral is calculated
   return 2.l * sqrtl(1.l - powl(x, 2.l));
 }
 
-void* integral(void* args) {  // a function, called on a thread
+void integral(void* args) {  // a function, called on a thread
   Args* arg = reinterpret_cast<Args*> (args);
   long double sum = 0.l;
   switch (arg->st_method) {
@@ -51,22 +52,12 @@ void* integral(void* args) {  // a function, called on a thread
       break;
     default:
       std::cerr << "Undefined method\n";
-      arg->st_error = true;
-      return NULL;
+      return;
   }
   // the beginning of the access to the critical section, i.e. to a variable 'answer'
-  if (pthread_mutex_lock(&mutex) != 0) {
-    std::cerr << "Failed to lock a mutex!\n";
-    arg->st_error = true;  // indicator operation
-    return NULL;
-  }
+  mutex.lock();
   answer += sum * arg->st_step;
   // the end of the access to the critical section, i.e. to a variable 'answer'
-  if (pthread_mutex_unlock(&mutex) != 0) {
-    std::cerr << "Failed to unlock a mutex!\n";
-    arg->st_error = true;  // indicator operation
-    return NULL;
-  }
-  arg->st_error = false;  // if there were not any errors, indicator is false
-  return NULL;
+  mutex.unlock();
+  return;
 }

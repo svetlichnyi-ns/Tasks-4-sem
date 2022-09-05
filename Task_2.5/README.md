@@ -1,5 +1,4 @@
 So as to run the program, enter the following into console:  
-g++ -c -Wextra -Wall -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-overflow=5 -Wwrite-strings -Wcast-qual -Wswitch-default -Wconversion -Wunreachable-code -g -Wuninitialized main.cpp  
-g++ -c -Wextra -Wall -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-overflow=5 -Wwrite-strings -Wcast-qual -Wswitch-default -Wconversion -Wunreachable-code -g -Wuninitialized source.cpp  
-g++ main.cpp source.cpp -fsanitize=address -lpthread -o output  
-./output
+make -f Makefile  
+./Integration  
+If you are willing to remove object files and an executable one, enter: make -f Makefile clean  
