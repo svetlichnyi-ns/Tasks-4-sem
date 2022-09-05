@@ -1,18 +1,19 @@
 #include <iostream>
-#include <pthread.h>
+#include <thread>
+#include <mutex>
 #include <cmath>
 #include "header.h"
 
-long double answer;
-int count;
-pthread_mutex_t mutex_1;
-pthread_mutex_t mutex_2;
+long double answer = 0.l;
+int count = 0;
+std::mutex mutex_1;
+std::mutex mutex_2;
 
 long double function_integral (long double x) {  // the function whose integral is calculated
   return 2.l * sqrtl(1.l - powl(x, 2.l));
 }
 
-void* one_dim_integral(void* args) {  // a function, called on a thread, working on the first task
+void one_dim_integral(void* args) {
   Args_1* arg = reinterpret_cast<Args_1*> (args);
   long double sum = 0.l;
   for (int i = arg->st_from; i < arg->st_to; i++) {
@@ -21,30 +22,17 @@ void* one_dim_integral(void* args) {  // a function, called on a thread, working
     sum += arg->st_func(x_random);
   }
   // the beginning of the access to the critical section, i.e. to a variable 'answer'
-  if (pthread_mutex_lock(&mutex_1) != 0) {
-    std::cerr << "Failed to lock the first mutex!\n";
-    arg->st_error = true;  // indicator operation
-    return NULL;
-  }
+  mutex_1.lock();
   answer += sum * arg->st_step;
   // the end of the access to the critical section, i.e. to a variable 'answer'
-  if (pthread_mutex_unlock(&mutex_1) != 0) {
-    std::cerr << "Failed to unlock the first mutex!\n";
-    arg->st_error = true;  // indicator operation
-    return NULL;
-  }
-  arg->st_error = false;  // if there were not any errors, indicator is false
-  return NULL;
+  mutex_1.unlock();
+  return;
 }
 
-void* two_dim_integral(void* args) {  // a function, called on a thread, working on the second task
+void two_dim_integral(void* args) {
   Args_2* arg = reinterpret_cast<Args_2*> (args);
   // the beginning of the access to the critical section, i.e. to a variable 'count'
-  if (pthread_mutex_lock(&mutex_2) != 0) {
-    std::cerr << "Failed to lock the second mutex!\n";
-    arg->st_error = true;  // indicator operation
-    return NULL;
-  }
+  mutex_2.lock();
   for (int j = arg->st_from; j < arg->st_to; j++) {
     // a random abscissa, belonging to the segment [a; b]
     long double x = arg->st_a + (arg->st_b - arg->st_a) * static_cast <long double> (rand()) / static_cast <long double> (RAND_MAX);
@@ -54,11 +42,6 @@ void* two_dim_integral(void* args) {  // a function, called on a thread, working
       count++;
   }
   // the end of the access to the critical section, i.e. to a variable 'count'
-  if (pthread_mutex_unlock(&mutex_2) != 0) {
-    std::cerr << "Failed to unlock the second mutex!\n";
-    arg->st_error = true;  // indicator operation
-    return NULL;
-  }
-  arg->st_error = false;  // if there were not any errors, indicator is false
-  return NULL;
+  mutex_2.unlock();
+  return;
 }
