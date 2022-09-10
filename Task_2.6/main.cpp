@@ -5,6 +5,7 @@
 #include <cmath>
 #include <mutex>
 #include <random>
+#include <vector>
 #include "header.h"
 
 int main() {
@@ -25,39 +26,20 @@ int main() {
     return -1;
   }
 
-  // start the timer
-  std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-  // create an array of threads
-  std::thread* threads_1;
-  try {
-    threads_1 = new std::thread [NumOfThreads_1];
-  }
-  catch (const std::bad_alloc& e) {
-    std::cerr << "Failed to allocate memory for an array of threads: " << e.what() << std::endl;
-    return -1;
-  }
-  // create an array of structures
-  Args_1* ArrayOfStructures_1;
-  try {
-    ArrayOfStructures_1 = new Args_1 [NumOfThreads_1];
-  }
-  catch (const std::bad_alloc& e) {
-    std::cerr << "Failed to allocate memory for an array of structures: " << e.what() << std::endl;
-    delete [] threads_1;
-    return -1;
-  }
-
+  std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  // start the timer
+  std::vector<std::thread> threads_1(NumOfThreads_1);  // create a vector of threads
+  std::vector<Args_1> VectorOfStructures_1(NumOfThreads_1);  // create a vector of structures
   int NumOfSegmentsPerThread = NumOfSegments / NumOfThreads_1;
   long double a = -1.l, b = 1.l;  // set limits of integration
   long double step = (b - a) / NumOfSegments;
   for (int j = 0; j < NumOfThreads_1; j++) {
-    ArrayOfStructures_1[j].st_from = j * NumOfSegmentsPerThread;
-    ArrayOfStructures_1[j].st_to = (j + 1) * NumOfSegmentsPerThread;
-    ArrayOfStructures_1[j].st_a = a;
-    ArrayOfStructures_1[j].st_step = step;
-    ArrayOfStructures_1[j].st_func = function_integral;
+    VectorOfStructures_1[j].st_from = j * NumOfSegmentsPerThread;
+    VectorOfStructures_1[j].st_to = (j + 1) * NumOfSegmentsPerThread;
+    VectorOfStructures_1[j].st_a = a;
+    VectorOfStructures_1[j].st_step = step;
+    VectorOfStructures_1[j].st_func = function_integral;
     // creation of threads
-    threads_1[j] = std::thread(one_dim_integral, &ArrayOfStructures_1[j]);
+    threads_1[j] = std::thread(one_dim_integral, &VectorOfStructures_1[j]);
   }
   // waiting for all threads to finish
   for (int j = 0; j < NumOfThreads_1; j++) {
@@ -77,8 +59,6 @@ int main() {
   std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();  // stop the timer
   std::cout << "The answer: " << std::setprecision(20) << answer << '\n';
   std::cout << "It took " << (std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count()) / 1'000'000'000.l << " seconds to calculate it.\n\n";
-  delete [] threads_1;
-  delete [] ArrayOfStructures_1;
 
   std::cout << "Two-dimensional Monte Carlo method\n";
   std::cout << "Enter the number of threads for the second task: ";
@@ -99,32 +79,15 @@ int main() {
 
   begin = std::chrono::steady_clock::now();  // start the timer
   int NumOfPointsPerThread = NumOfPoints / NumOfThreads_2;
-  std::thread* threads_2;
-  try {
-    threads_2 = new std::thread [NumOfThreads_2];
-  }
-  catch (const std::bad_alloc& e) {
-    std::cerr << "Failed to allocate memory for an array of threads: " << e.what() << std::endl;
-    return -1;
-  }
-
-  Args_2* ArrayOfStructures_2;
-  try {
-    ArrayOfStructures_2 = new Args_2 [NumOfThreads_2];
-  }
-  catch (const std::bad_alloc& e) {
-    std::cerr << "Failed to allocate memory for an array of structures: " << e.what() << std::endl;
-    delete [] threads_1;
-    return -1;
-  }
-
+  std::vector<std::thread> threads_2(NumOfThreads_2);
+  std::vector<Args_2> VectorOfStructures_2(NumOfThreads_2);
   for (int j = 0; j < NumOfThreads_2; j++) {
-    ArrayOfStructures_2[j].st_from = j * NumOfPointsPerThread;
-    ArrayOfStructures_2[j].st_to = (j + 1) * NumOfPointsPerThread;
-    ArrayOfStructures_2[j].st_a = a;
-    ArrayOfStructures_2[j].st_b = b;
-    ArrayOfStructures_2[j].st_func = function_integral;
-    threads_2[j] = std::thread(two_dim_integral, &ArrayOfStructures_2[j]);
+    VectorOfStructures_2[j].st_from = j * NumOfPointsPerThread;
+    VectorOfStructures_2[j].st_to = (j + 1) * NumOfPointsPerThread;
+    VectorOfStructures_2[j].st_a = a;
+    VectorOfStructures_2[j].st_b = b;
+    VectorOfStructures_2[j].st_func = function_integral;
+    threads_2[j] = std::thread(two_dim_integral, &VectorOfStructures_2[j]);
   }
 
   for (int j = 0; j < NumOfThreads_2; j++) {
@@ -146,7 +109,5 @@ int main() {
   end = std::chrono::steady_clock::now();  // stop the timer
   std::cout << "The answer: " << std::setprecision(15) << (10.l * (b - a)) * (long double) count / (long double) NumOfPoints;
   std::cout << "\nIt took " << (std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count()) / 1'000'000'000.l << " seconds to calculate it.\n";
-  delete [] threads_2;
-  delete [] ArrayOfStructures_2;
   return 0;
 }

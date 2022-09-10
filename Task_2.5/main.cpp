@@ -1,6 +1,6 @@
 #include <iostream>
 #include <iomanip>
-#include <new>
+#include <vector>
 #include <chrono>
 #include <cmath>
 #include <thread>
@@ -44,38 +44,20 @@ int main() {
   // start the timer
   std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
   answer = 0.l;  // set an initial value of the integral
-  // create an array of threads
-  std::thread* threads;
-  try {
-    threads = new std::thread [NumOfThreads];
-  }
-  catch (const std::bad_alloc& e) {
-    std::cerr << "Failed to allocate memory for an array of threads: " << e.what() << std::endl;
-    return -1;
-  }
-  // create an array of structures
-  Args* ArrayOfStructures;
-  try {
-    ArrayOfStructures = new Args [NumOfThreads];
-  }
-  catch (const std::bad_alloc& e) {
-    std::cerr << "Failed to allocate memory for an array of structures: " << e.what() << std::endl;
-    delete [] threads;
-    return -1;
-  }
-
+  std::vector<std::thread> threads(NumOfThreads);  // create a vector of threads
+  std::vector<Args> VectorOfStructures(NumOfThreads);  // create a vector of structures
   int NumOfSegmentsPerThread = NumOfSegments / NumOfThreads;
   long double a = -1.l, b = 1.l;  // set limits of integration
   long double step = (b - a) / NumOfSegments;
   for (int j = 0; j < NumOfThreads; j++) {
-    ArrayOfStructures[j].st_from = j * NumOfSegmentsPerThread;
-    ArrayOfStructures[j].st_to = (j + 1) * NumOfSegmentsPerThread;
-    ArrayOfStructures[j].st_a = a;
-    ArrayOfStructures[j].st_step = step;
-    ArrayOfStructures[j].st_func = function_integral;
-    ArrayOfStructures[j].st_method = static_cast<int>(method);
+    VectorOfStructures[j].st_from = j * NumOfSegmentsPerThread;
+    VectorOfStructures[j].st_to = (j + 1) * NumOfSegmentsPerThread;
+    VectorOfStructures[j].st_a = a;
+    VectorOfStructures[j].st_step = step;
+    VectorOfStructures[j].st_func = function_integral;
+    VectorOfStructures[j].st_method = static_cast<int>(method);
     // creation of threads
-    threads[j] = std::thread(integral, &ArrayOfStructures[j]);
+    threads[j] = std::thread(integral, &VectorOfStructures[j]);
   }
   // waiting for all threads to finish
   for (int j = 0; j < NumOfThreads; j++) {
@@ -96,7 +78,5 @@ int main() {
   std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();  // stop the timer
   std::cout << "The answer: " << std::setprecision(20) << answer << '\n';
   std::cout << "It took " << (std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count()) / 1'000'000'000.l << " seconds to calculate it.\n";
-  delete [] threads;
-  delete [] ArrayOfStructures;
   return 0;
 }
