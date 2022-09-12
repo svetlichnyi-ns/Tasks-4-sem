@@ -1,10 +1,9 @@
 #include <iostream>
 #include <iomanip>
-#include <vector>
+#include <cstdlib>
 #include <chrono>
 #include <cmath>
-#include <thread>
-#include <mutex>
+#include <pthread.h>
 #include "header.h"
 
 int main() {
@@ -44,27 +43,57 @@ int main() {
   // start the timer
   std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
   answer = 0.l;  // set an initial value of the integral
-  std::vector<std::thread> threads(NumOfThreads);  // create a vector of threads
-  std::vector<Args> VectorOfStructures(NumOfThreads);  // create a vector of structures
+  // create an array of threads' identificators
+  pthread_t* threads = (pthread_t*) malloc ((NumOfThreads) * sizeof(pthread_t));
+  if (threads == NULL) {
+    std::cerr << "Failed to allocate memory for an array of threads' identificators via malloc()\n";
+    return -1;
+  }
+  // create an array of structures
+  Args* ArrayOfStructures = (Args*) malloc ((NumOfThreads) * sizeof(Args));
+  if (ArrayOfStructures == NULL) {
+    std::cerr << "Failed to allocate memory for an array of structs via malloc()\n";
+    free(threads);
+    return -1;
+  }
+  // the initialization of the mutex
+  if (pthread_mutex_init(&mutex, NULL) != 0) {
+    std::cerr << "Failed to initialize a mutex!\n";
+    free(threads);
+    free(ArrayOfStructures);
+    return -1;
+  }
+
   int NumOfSegmentsPerThread = NumOfSegments / NumOfThreads;
   long double a = -1.l, b = 1.l;  // set limits of integration
   long double step = (b - a) / NumOfSegments;
   for (int j = 0; j < NumOfThreads; j++) {
-    VectorOfStructures[j].st_from = j * NumOfSegmentsPerThread;
-    VectorOfStructures[j].st_to = (j + 1) * NumOfSegmentsPerThread;
-    VectorOfStructures[j].st_a = a;
-    VectorOfStructures[j].st_step = step;
-    VectorOfStructures[j].st_func = function_integral;
-    VectorOfStructures[j].st_method = static_cast<int>(method);
+    ArrayOfStructures[j].st_from = j * NumOfSegmentsPerThread;
+    ArrayOfStructures[j].st_to = (j + 1) * NumOfSegmentsPerThread;
+    ArrayOfStructures[j].st_a = a;
+    ArrayOfStructures[j].st_step = step;
+    ArrayOfStructures[j].st_func = function_integral;
+    ArrayOfStructures[j].st_method = static_cast<int>(method);
     // creation of threads
-    threads[j] = std::thread(integral, &VectorOfStructures[j]);
+    if (pthread_create(&threads[j], NULL, integral, &ArrayOfStructures[j]) != 0) {
+      std::cerr << "Failed to create a thread!\n";
+      free(threads);
+      free(ArrayOfStructures);
+      return -1;
+    }
   }
   // waiting for all threads to finish
   for (int j = 0; j < NumOfThreads; j++) {
-    threads[j].join();
+    if (pthread_join(threads[j], NULL) != 0) {
+      std::cerr << "Failed to join a thread!\n";
+      free(threads);
+      free(ArrayOfStructures);
+      return -1;
+    }
   }
   // integrate over the remaining segments (if NumOfSegments isn't evenly divisible by NumOfThreads)
   if (NumOfSegments % NumOfThreads != 0) {
+    pthread_t last_thread;  // an identificator of the last thread
     Args LastThread;  // a structure instance, created especially for the last thread 
     LastThread.st_from = NumOfThreads * NumOfSegmentsPerThread;
     LastThread.st_to = NumOfSegments;
@@ -72,11 +101,30 @@ int main() {
     LastThread.st_step = step;
     LastThread.st_func = function_integral;
     LastThread.st_method = static_cast<int>(method);
-    std::thread last_thread(integral, &LastThread);
-    last_thread.join();
+    if (pthread_create(&last_thread, NULL, integral, &LastThread) != 0) {
+      std::cerr << "Failed to create a thread!\n";
+      free(threads);
+      free(ArrayOfStructures);
+      return -1;
+    }
+    if (pthread_join(last_thread, NULL) != 0) {
+      std::cerr << "Failed to join a thread!\n";
+      free(threads);
+      free(ArrayOfStructures);
+      return -1;
+    }
   }
   std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();  // stop the timer
   std::cout << "The answer: " << std::setprecision(20) << answer << '\n';
   std::cout << "It took " << (std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count()) / 1'000'000'000.l << " seconds to calculate it.\n";
+  // the destroyment of the mutex
+  if (pthread_mutex_destroy(&mutex) != 0) {
+    std::cerr << "Failed to destroy a mutex!\n";
+    free(threads);
+    free(ArrayOfStructures);
+    return -1;
+  }
+  free(threads);
+  free(ArrayOfStructures);
   return 0;
 }

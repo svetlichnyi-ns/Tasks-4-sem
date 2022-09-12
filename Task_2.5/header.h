@@ -1,10 +1,9 @@
 #ifndef HEADER_H
 #define HEADER_H
-#include <thread>
-#include <mutex>
+#include <pthread.h>
 
 extern long double answer;  // a global variable, common for all threads
-extern std::mutex mutex;  // it's used for threads' synchronization
+extern pthread_mutex_t mutex;  // it's used for threads' synchronization
 
 typedef struct {  // the arguments of a function, called on a thread, are "wrapped" in a structure
   int st_from, st_to;  // initial and final segments of integration for a given thread
@@ -15,6 +14,6 @@ typedef struct {  // the arguments of a function, called on a thread, are "wrapp
 } Args;
 
 long double function_integral (long double x);  // the function whose integral is calculated
-void integral(void* args);  // a function, called on a thread
+void* integral(void* args);  // a function, called on a thread
 
 #endif
