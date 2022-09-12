@@ -1,11 +1,11 @@
 #ifndef HEADER_H
 #define HEADER_H
-#include <mutex>
+#include <pthread.h>
 
 extern long double answer;  // a global variable, used in one-dimensional Monte Carlo method
 extern int count;  // a global variable, used in two-dimensional Monte Carlo method
-extern std::mutex mutex_1;  // it's used for synchronization of threads, working on the first task
-extern std::mutex mutex_2;  // it's used for synchronization of threads, working on the second task
+extern pthread_mutex_t mutex_1;  // it's used for synchronization of threads, working on the first task
+extern pthread_mutex_t mutex_2;  // it's used for synchronization of threads, working on the second task
 
 typedef struct {
   int st_from, st_to;  // initial and final segments of integration for a given thread
@@ -21,7 +21,7 @@ typedef struct {
 } Args_2;
 
 long double function_integral (long double x);  // the function whose integral is calculated
-void one_dim_integral(void* args);  // a function, called on a thread, working on the first task
-void two_dim_integral(void* args);  // a function, called on a thread, working on the second task
+void* one_dim_integral(void* args);  // a function, called on a thread, working on the first task
+void* two_dim_integral(void* args);  // a function, called on a thread, working on the second task
 
 #endif

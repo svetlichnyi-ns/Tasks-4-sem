@@ -1,22 +1,22 @@
 #include <iostream>
-#include <thread>
+#include <pthread.h>
 #include <random>
-#include <mutex>
 #include <cmath>
 #include "header.h"
 
-long double answer = 0.l;
-int count = 0;
-std::mutex mutex_1;
-std::mutex mutex_2;
+long double answer;
+int count;
+pthread_mutex_t mutex_1;
+pthread_mutex_t mutex_2;
 
 long double function_integral (long double x) {  // the function whose integral is calculated
   return 2.l * sqrtl(1.l - powl(x, 2.l));
 }
 
-void one_dim_integral(void* args) {
+void* one_dim_integral(void* args) {
   Args_1* arg = reinterpret_cast<Args_1*> (args);
   long double sum = 0.l;
+  // prepare a random number generator
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::uniform_real_distribution<> distr(0, 1);
@@ -26,20 +26,30 @@ void one_dim_integral(void* args) {
     sum += arg->st_func(x_random);
   }
   // the beginning of the access to the critical section, i.e. to a variable 'answer'
-  mutex_1.lock();
+  if (pthread_mutex_lock(&mutex_1) != 0) {
+    std::cerr << "Failed to lock the first mutex!\n";
+    return NULL;
+  }
   answer += sum * arg->st_step;
   // the end of the access to the critical section, i.e. to a variable 'answer'
-  mutex_1.unlock();
-  return;
+  if (pthread_mutex_unlock(&mutex_1) != 0) {
+    std::cerr << "Failed to unlock the first mutex!\n";
+    return NULL;
+  }
+  return NULL;
 }
 
-void two_dim_integral(void* args) {
+void* two_dim_integral(void* args) {
   Args_2* arg = reinterpret_cast<Args_2*> (args);
+  // prepare a random number generator
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::uniform_real_distribution<> distr(0, 1);
   // the beginning of the access to the critical section, i.e. to a variable 'count'
-  mutex_2.lock();
+  if (pthread_mutex_lock(&mutex_2) != 0) {
+    std::cerr << "Failed to lock the second mutex!\n";
+    return NULL;
+  }
   for (int j = arg->st_from; j < arg->st_to; j++) {
     // a random abscissa, belonging to the segment [a; b]
     long double x = arg->st_a + (arg->st_b - arg->st_a) * distr(eng);
@@ -49,6 +59,9 @@ void two_dim_integral(void* args) {
       count++;
   }
   // the end of the access to the critical section, i.e. to a variable 'count'
-  mutex_2.unlock();
-  return;
+  if (pthread_mutex_unlock(&mutex_2) != 0) {
+    std::cerr << "Failed to unlock the second mutex!\n";
+    return NULL;
+  }
+  return NULL;
 }
